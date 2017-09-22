@@ -14,6 +14,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,15 +22,37 @@ public final class Db {
 
     private static final Logger logger = LoggerFactory.getLogger(Db.class);
 
-    private static final HikariDataSource cp;
+    private static HikariDataSource cp;
     private static final ThreadLocal<DbConnection> localConnection = new ThreadLocal<>();
     private static final ThreadLocal<Map<String, Map<DbKey, Object>>> transactionCaches = new ThreadLocal<>();
     private static final ThreadLocal<Map<String, Map<DbKey, Object>>> transactionBatches = new ThreadLocal<>();
-    private static final TYPE DATABASE_TYPE;
+    private static TYPE DATABASE_TYPE;
+    private static Map<TYPE, Map<String, String>> additionalDatabaseOptions = new EnumMap<>(TYPE.class);
     private static final boolean enableSqlMetrics = Nxt.getBooleanProperty("burst.enableSqlMetrics", false);
 
 
     static {
+      // Moved to init()
+        for (TYPE type: TYPE.values())
+            additionalDatabaseOptions.put(type, new HashMap<>());
+    }
+
+
+    private Db() {
+    } // never
+
+    /** Adds a database-type specific config option. Used in alternate run modes to set
+     * unconventional options.
+     * @param databaseType The database type for which to set the option
+     * @param name name of the option
+     * @param value value of the option
+     */
+    public static void addDatabaseOption (TYPE databaseType, String name, String value)
+    {
+        additionalDatabaseOptions.get(databaseType).put(name, value);
+    }
+
+    public static void init() {
         String dbUrl;
         String dbUsername;
         String dbPassword;
@@ -64,8 +87,7 @@ public final class Db {
                     config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
                     config.addDataSourceProperty("characterEncoding", "utf8mb4");
                     config.addDataSourceProperty("useUnicode", "true");
-                    config.addDataSourceProperty("useServerPrepStmts", "false");
-                    config.addDataSourceProperty("rewriteBatchedStatements", "true");
+
                     config.setConnectionInitSql("SET NAMES utf8mb4;");
                     break;
                 case FIREBIRD:
@@ -96,6 +118,10 @@ public final class Db {
                     break;
             }
 
+            Map<String, String> additionalOptions =additionalDatabaseOptions.get(TYPE.MARIADB);
+            for (String k: additionalOptions.keySet())
+                config.addDataSourceProperty(k, additionalOptions.get(k));
+
             cp = new HikariDataSource(config);
 
             if (DATABASE_TYPE == TYPE.H2) {
@@ -111,13 +137,6 @@ public final class Db {
         } catch (Exception e) {
             throw new RuntimeException(e.toString(), e);
         }
-    }
-
-
-    private Db() {
-    } // never
-
-    public static void init() {
     }
 
     public static void analyzeTables() {

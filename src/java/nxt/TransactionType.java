@@ -9,12 +9,16 @@ import nxt.at.AT_Controller;
 import nxt.at.AT_Exception;
 import nxt.util.Convert;
 import org.json.simple.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.*;
 
 
 public abstract class TransactionType {
+
+    private final Logger logger = LoggerFactory.getLogger(TransactionType.class);
 
     private static final byte TYPE_PAYMENT = 0;
     private static final byte TYPE_MESSAGING = 1;
@@ -208,7 +212,10 @@ public abstract class TransactionType {
             totalAmountNQT = Convert.safeAdd(totalAmountNQT, Constants.UNCONFIRMED_POOL_DEPOSIT_NQT);
         }
         if (senderAccount.getUnconfirmedBalanceNQT() < totalAmountNQT) {
-            return false;
+            {
+                logger.info("Insufficient balance in transaction "+transaction);
+                return false;
+            }
         }
         senderAccount.addToUnconfirmedBalanceNQT(-totalAmountNQT);
         if (!applyAttachmentUnconfirmed(transaction, senderAccount)) {

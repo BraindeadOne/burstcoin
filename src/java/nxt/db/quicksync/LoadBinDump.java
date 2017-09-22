@@ -113,7 +113,9 @@ public class LoadBinDump {
                 }
             }
             LoggerConfigurator.init();
-
+            // These options lead to problems in normal use but bring a extreme performance boost here
+            Db.addDatabaseOption(Db.TYPE.MARIADB, "useServerPrepStmts", "false");
+            Db.addDatabaseOption(Db.TYPE.MARIADB, "rewriteBatchedStatements", "true");
             Db.init();
             switch (Db.getDatabaseType()) {
                 case MARIADB:
