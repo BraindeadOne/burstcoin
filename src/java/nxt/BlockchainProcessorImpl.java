@@ -1354,137 +1354,137 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
          *
          * */
 
-//        synchronized (blockchain) {
-//
-//            TransactionProcessorImpl transactionProcessor = TransactionProcessorImpl.getInstance();
-//            int blockchainHeight = Nxt.getBlockchain().getHeight();
-//            if (height > blockchainHeight + 1) {
-//                throw new IllegalArgumentException("Rollback height " + (height - 1) + " exceeds current blockchain height of " + blockchainHeight);
-//            }
-//            if (height > 0 && height < getMinRollbackHeight()) {
-//                logger.info("Rollback of more than " + Constants.MAX_ROLLBACK + " blocks not supported, will do a full scan");
-//                height = 0;
-//            }
-//            if (height < 0) {
-//                height = 0;
-//            }
-//            isScanning = true;
-//            logger.info("Scanning blockchain starting from height " + height + "...");
-//            if (validateAtScan) {
-//                logger.debug("Also verifying signatures and validating transactions...");
-//            }
-//            try (Connection con = Db.beginTransaction();
-//
-//                 PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE height >= ? ORDER BY db_id ASC")) {
-//                transactionProcessor.requeueAllUnconfirmedTransactions();
-//                Account.flushAccountTable();
-//                for (DerivedTable table : derivedTables) {
-//                    if (height == 0) {
-//                        table.truncate();
-//                    } else {
-//                        table.rollback(height - 1);
-//                    }
-//                }
-//                pstmt.setInt(1, height);
-//                try (ResultSet rs = pstmt.executeQuery()) {
-//                    BlockImpl currentBlock = blockDb.findBlockAtHeight(height);
-//                    blockListeners.notify(currentBlock, BlockchainProcessor.Event.RESCAN_BEGIN);
-//                    long currentBlockId = currentBlock.getId();
-//                    if (height == 0) {
-//                        blockchain.setLastBlock(currentBlock); // special case to avoid no last block
-//                        //Account.addOrGetAccount(Genesis.CREATOR_ID).apply(Genesis.CREATOR_PUBLIC_KEY, 0);
-//                    } else {
-//                        blockchain.setLastBlock(blockDb.findBlockAtHeight(height - 1));
-//                    }
-//                    while (rs.next()) {
-//                        try {
-//                            currentBlock = blockDb.loadBlock(con, rs);
-//                            if (currentBlock.getId() != currentBlockId) {
-//                                if (currentBlockId == Genesis.GENESIS_BLOCK_ID) {
-//                                    logger.debug("Wrong genesis block id set. Should be: " + Convert.toUnsignedLong(currentBlock.getId()));
-//                                }
-//                                throw new NxtException.NotValidException("Database blocks in the wrong order!");
-//                            }
-//                            if (validateAtScan && currentBlockId != Genesis.GENESIS_BLOCK_ID) {
-//                                if (!currentBlock.verifyBlockSignature()) {
-//                                    throw new NxtException.NotValidException("Invalid block signature");
-//                                }
-//                                if (!currentBlock.verifyGenerationSignature()) {
-//                                    throw new NxtException.NotValidException("Invalid block generation signature");
-//                                }
-//                                if (currentBlock.getVersion() != getBlockVersion(blockchain.getHeight())) {
-//                                    throw new NxtException.NotValidException("Invalid block version");
-//                                }
-//                                byte[] blockBytes = currentBlock.getBytes();
-//                                JSONObject blockJSON = (JSONObject) JSONValue.parse(currentBlock.getJSONObject().toJSONString());
-//                                if (!Arrays.equals(blockBytes, BlockImpl.parseBlock(blockJSON).getBytes())) {
-//                                    throw new NxtException.NotValidException("Block JSON cannot be parsed back to the same block");
-//                                }
-//                                for (TransactionImpl transaction : currentBlock.getTransactions()) {
-//									/*if (!transaction.verifySignature()) { // moved to preVerify
-//										throw new NxtException.NotValidException("Invalid transaction signature");
-//									}*/
-//                                    if (!transaction.verifyPublicKey()) {
-//                                        throw new NxtException.NotValidException("Wrong transaction public key");
-//                                    }
-//                                    if (transaction.getVersion() != transactionProcessor.getTransactionVersion(blockchain.getHeight())) {
-//                                        throw new NxtException.NotValidException("Invalid transaction version");
-//                                    }
-//									/*
-//                                    if (!EconomicClustering.verifyFork(transaction)) {
-//                                        logger.debug("Found transaction that was generated on a fork: " + transaction.getStringId()
-//                                                + " in block " + currentBlock.getStringId() + " at height " + currentBlock.getHeight()
-//                                                + " ecBlockHeight " + transaction.getECBlockHeight() + " ecBlockId " + Convert.toUnsignedLong(transaction.getECBlockId()));
-//                                        //throw new NxtException.NotValidException("Invalid transaction fork");
-//                                    }
-//									 */
-//                                    transaction.validate();
-//                                    byte[] transactionBytes = transaction.getBytes();
-//                                    if (currentBlock.getHeight() > Constants.NQT_BLOCK
-//                                            && !Arrays.equals(transactionBytes, transactionProcessor.parseTransaction(transactionBytes).getBytes())) {
-//                                        throw new NxtException.NotValidException("Transaction bytes cannot be parsed back to the same transaction");
-//                                    }
-//                                    JSONObject transactionJSON = (JSONObject) JSONValue.parse(transaction.getJSONObject().toJSONString());
-//                                    if (!Arrays.equals(transactionBytes, transactionProcessor.parseTransaction(transactionJSON).getBytes())) {
-//                                        throw new NxtException.NotValidException("Transaction JSON cannot be parsed back to the same transaction");
-//                                    }
-//                                }
-//                            }
-//                            blockListeners.notify(currentBlock, BlockchainProcessor.Event.BEFORE_BLOCK_ACCEPT);
-//                            blockchain.setLastBlock(currentBlock);
-//                            accept(currentBlock, null, null);
-//                            currentBlockId = currentBlock.getNextBlockId();
-//                            Db.commitTransaction();
-//                        } catch (NxtException | RuntimeException e) {
-//                            Db.rollbackTransaction();
-//                            logger.debug(e.toString(), e);
-//                            logger.debug("Applying block " + Convert.toUnsignedLong(currentBlockId) + " at height "
-//                                    + (currentBlock == null ? 0 : currentBlock.getHeight()) + " failed, deleting from database");
-//                            if (currentBlock != null) {
-//                                transactionProcessor.processLater(currentBlock.getTransactions());
-//                            }
-//                            while (rs.next()) {
-//                                try {
-//                                    currentBlock = blockDb.loadBlock(con, rs);
-//                                    transactionProcessor.processLater(currentBlock.getTransactions());
-//                                } catch (NxtException.ValidationException ignore) {
-//                                }
-//                            }
-//                            blockDb.deleteBlocksFrom(currentBlockId);
-//                            blockchain.setLastBlock(blockDb.findLastBlock());
-//                        }
-//                        blockListeners.notify(currentBlock, BlockchainProcessor.Event.BLOCK_SCANNED);
-//                    }
-//                    Db.endTransaction();
-//                    blockListeners.notify(currentBlock, BlockchainProcessor.Event.RESCAN_END);
-//                }
-//            } catch (SQLException e) {
-//                throw new RuntimeException(e.toString(), e);
-//            }
-//            validateAtScan = false;
-//            logger.info("...done at height " + Nxt.getBlockchain().getHeight());
-//            isScanning = false;
-//        } // synchronized
+        synchronized (blockchain) {
+
+            TransactionProcessorImpl transactionProcessor = TransactionProcessorImpl.getInstance();
+            int blockchainHeight = Nxt.getBlockchain().getHeight();
+            if (height > blockchainHeight + 1) {
+                throw new IllegalArgumentException("Rollback height " + (height - 1) + " exceeds current blockchain height of " + blockchainHeight);
+            }
+            if (height > 0 && height < getMinRollbackHeight()) {
+                logger.info("Rollback of more than " + Constants.MAX_ROLLBACK + " blocks not supported, will do a full scan");
+                height = 0;
+            }
+            if (height < 0) {
+                height = 0;
+            }
+            isScanning = true;
+            logger.info("Scanning blockchain starting from height " + height + "...");
+            if (validateAtScan) {
+                logger.debug("Also verifying signatures and validating transactions...");
+            }
+            try (Connection con = Db.beginTransaction();
+
+                 PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE height >= ? ORDER BY db_id ASC")) {
+                transactionProcessor.requeueAllUnconfirmedTransactions();
+                Account.flushAccountTable();
+                for (DerivedTable table : derivedTables) {
+                    if (height == 0) {
+                        table.truncate();
+                    } else {
+                        table.rollback(height - 1);
+                    }
+                }
+                pstmt.setInt(1, height);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    BlockImpl currentBlock = blockDb.findBlockAtHeight(height);
+                    blockListeners.notify(currentBlock, BlockchainProcessor.Event.RESCAN_BEGIN);
+                    long currentBlockId = currentBlock.getId();
+                    if (height == 0) {
+                        blockchain.setLastBlock(currentBlock); // special case to avoid no last block
+                        //Account.addOrGetAccount(Genesis.CREATOR_ID).apply(Genesis.CREATOR_PUBLIC_KEY, 0);
+                    } else {
+                        blockchain.setLastBlock(blockDb.findBlockAtHeight(height - 1));
+                    }
+                    while (rs.next()) {
+                        try {
+                            currentBlock = blockDb.loadBlock(con, rs);
+                            if (currentBlock.getId() != currentBlockId) {
+                                if (currentBlockId == Genesis.GENESIS_BLOCK_ID) {
+                                    logger.debug("Wrong genesis block id set. Should be: " + Convert.toUnsignedLong(currentBlock.getId()));
+                                }
+                                throw new NxtException.NotValidException("Database blocks in the wrong order!");
+                            }
+                            if (validateAtScan && currentBlockId != Genesis.GENESIS_BLOCK_ID) {
+                                if (!currentBlock.verifyBlockSignature()) {
+                                    throw new NxtException.NotValidException("Invalid block signature");
+                                }
+                                if (!currentBlock.verifyGenerationSignature()) {
+                                    throw new NxtException.NotValidException("Invalid block generation signature");
+                                }
+                                if (currentBlock.getVersion() != getBlockVersion(blockchain.getHeight())) {
+                                    throw new NxtException.NotValidException("Invalid block version");
+                                }
+                                byte[] blockBytes = currentBlock.getBytes();
+                                JSONObject blockJSON = (JSONObject) JSONValue.parse(currentBlock.getJSONObject().toJSONString());
+                                if (!Arrays.equals(blockBytes, BlockImpl.parseBlock(blockJSON).getBytes())) {
+                                    throw new NxtException.NotValidException("Block JSON cannot be parsed back to the same block");
+                                }
+                                for (TransactionImpl transaction : currentBlock.getTransactions()) {
+									/*if (!transaction.verifySignature()) { // moved to preVerify
+										throw new NxtException.NotValidException("Invalid transaction signature");
+									}*/
+                                    if (!transaction.verifyPublicKey()) {
+                                        throw new NxtException.NotValidException("Wrong transaction public key");
+                                    }
+                                    if (transaction.getVersion() != transactionProcessor.getTransactionVersion(blockchain.getHeight())) {
+                                        throw new NxtException.NotValidException("Invalid transaction version");
+                                    }
+									/*
+                                    if (!EconomicClustering.verifyFork(transaction)) {
+                                        logger.debug("Found transaction that was generated on a fork: " + transaction.getStringId()
+                                                + " in block " + currentBlock.getStringId() + " at height " + currentBlock.getHeight()
+                                                + " ecBlockHeight " + transaction.getECBlockHeight() + " ecBlockId " + Convert.toUnsignedLong(transaction.getECBlockId()));
+                                        //throw new NxtException.NotValidException("Invalid transaction fork");
+                                    }
+									 */
+                                    transaction.validate();
+                                    byte[] transactionBytes = transaction.getBytes();
+                                    if (currentBlock.getHeight() > Constants.NQT_BLOCK
+                                            && !Arrays.equals(transactionBytes, transactionProcessor.parseTransaction(transactionBytes).getBytes())) {
+                                        throw new NxtException.NotValidException("Transaction bytes cannot be parsed back to the same transaction");
+                                    }
+                                    JSONObject transactionJSON = (JSONObject) JSONValue.parse(transaction.getJSONObject().toJSONString());
+                                    if (!Arrays.equals(transactionBytes, transactionProcessor.parseTransaction(transactionJSON).getBytes())) {
+                                        throw new NxtException.NotValidException("Transaction JSON cannot be parsed back to the same transaction");
+                                    }
+                                }
+                            }
+                            blockListeners.notify(currentBlock, BlockchainProcessor.Event.BEFORE_BLOCK_ACCEPT);
+                            blockchain.setLastBlock(currentBlock);
+                            accept(currentBlock, null, null);
+                            currentBlockId = currentBlock.getNextBlockId();
+                            Db.commitTransaction();
+                        } catch (NxtException | RuntimeException e) {
+                            Db.rollbackTransaction();
+                            logger.debug(e.toString(), e);
+                            logger.debug("Applying block " + Convert.toUnsignedLong(currentBlockId) + " at height "
+                                    + (currentBlock == null ? 0 : currentBlock.getHeight()) + " failed, deleting from database");
+                            if (currentBlock != null) {
+                                transactionProcessor.processLater(currentBlock.getTransactions());
+                            }
+                            while (rs.next()) {
+                                try {
+                                    currentBlock = blockDb.loadBlock(con, rs);
+                                    transactionProcessor.processLater(currentBlock.getTransactions());
+                                } catch (NxtException.ValidationException ignore) {
+                                }
+                            }
+                            blockDb.deleteBlocksFrom(currentBlockId);
+                            blockchain.setLastBlock(blockDb.findLastBlock());
+                        }
+                        blockListeners.notify(currentBlock, BlockchainProcessor.Event.BLOCK_SCANNED);
+                    }
+                    Db.endTransaction();
+                    blockListeners.notify(currentBlock, BlockchainProcessor.Event.RESCAN_END);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e.toString(), e);
+            }
+            validateAtScan = false;
+            logger.info("...done at height " + Nxt.getBlockchain().getHeight());
+            isScanning = false;
+        } // synchronized
 	}
 
 }
