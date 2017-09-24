@@ -87,7 +87,7 @@ public final class Db {
                     config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
                     config.addDataSourceProperty("characterEncoding", "utf8mb4");
                     config.addDataSourceProperty("useUnicode", "true");
-
+                    config.addDataSourceProperty("rewriteBatchedStatements", "false");
                     config.setConnectionInitSql("SET NAMES utf8mb4;");
                     break;
                 case FIREBIRD:

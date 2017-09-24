@@ -12,6 +12,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class SqlBlockDb implements BlockDb {
 
@@ -239,5 +241,37 @@ public abstract class SqlBlockDb implements BlockDb {
 
     @Override
     public abstract void deleteAll();
+
+    @Override
+    public List<Long> getBlockIdsFromHeight(int height) {
+        List<Long> res = new ArrayList<>();
+        try (Connection con = Db.getConnection(); PreparedStatement ps =
+                con.prepareStatement("SELECT id FROM block WHERE height >= ? ORDER BY db_id ASC"))
+        {
+            ps.setLong(1, height);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next())
+                res.add(rs.getLong("id"));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return res;
+    }
+
+    @Override
+    public BlockImpl loadBlock(Long id) throws NxtException.ValidationException {
+        try (Connection con = Db.getConnection(); PreparedStatement ps =
+                con.prepareStatement("SELECT * FROM block WHERE id=?");)
+        {
+            ps.setLong(1,id);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next())
+              return loadBlock(con, rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        throw new RuntimeException("Unable to load Block with id "+id);
+    }
 
 }

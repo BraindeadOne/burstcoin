@@ -251,7 +251,7 @@ public final class BlockImpl implements Block {
 
     @Override
     public int getScoopNum() {
-		return Nxt.getGenerator().calculateScoop(generationSignature, getHeight());
+        return Nxt.getGenerator().calculateScoop(generationSignature, getHeight());
     }
 
     @Override

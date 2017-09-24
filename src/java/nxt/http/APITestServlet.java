@@ -1,6 +1,7 @@
 package nxt.http;
 
 import nxt.util.Convert;
+import nxt.util.Subnet;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -8,7 +9,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.util.*;
+
+import static nxt.http.JSONResponses.ERROR_NOT_ALLOWED;
 
 public class APITestServlet extends HttpServlet {
 
@@ -197,7 +201,18 @@ public class APITestServlet extends HttpServlet {
         resp.setDateHeader("Expires", 0);
         resp.setContentType("text/html; charset=UTF-8");
 
-        if (API.allowedBotHosts != null && ! API.allowedBotHosts.contains(req.getRemoteHost())) {
+        InetAddress remoteAddress = InetAddress.getByName(req.getRemoteHost());
+        boolean allowed = false;
+        for (Subnet allowedSubnet: API.allowedBotHosts)
+        {
+            if (allowedSubnet.isInNet(remoteAddress))
+            {
+                allowed = true;
+                break;
+            }
+        }
+        if (!allowed)
+        {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
