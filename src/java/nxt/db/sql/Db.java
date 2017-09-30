@@ -118,7 +118,7 @@ public final class Db {
                     break;
             }
 
-            Map<String, String> additionalOptions =additionalDatabaseOptions.get(TYPE.MARIADB);
+            Map<String, String> additionalOptions =additionalDatabaseOptions.get(DATABASE_TYPE);
             for (String k: additionalOptions.keySet())
                 config.addDataSourceProperty(k, additionalOptions.get(k));
 

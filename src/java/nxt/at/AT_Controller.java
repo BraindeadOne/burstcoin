@@ -361,7 +361,8 @@ public abstract class AT_Controller {
 		{
 			byte[] atId = atIdBuffer.array();
 			AT at = AT.getAT( atId );
-
+			if (at == null)
+				throw new RuntimeException("AT "+AT_API_Helper.getLong( atId ) +" does not exist");
 			try
 			{
 				at.clearTransactions();
@@ -419,7 +420,7 @@ public abstract class AT_Controller {
 			catch ( Exception e )
 			{
 				//e.printStackTrace(System.out);
-				throw new AT_Exception( "ATs error. Block rejected" );
+				throw new AT_Exception( "ATs error. Block rejected" ,e);
 			}
 		}
 

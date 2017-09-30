@@ -8,5 +8,7 @@ public class AT_Exception extends Exception {
 	public AT_Exception(String message){
 	     super(message);
 	  }
-
+	public AT_Exception(String message, Exception e){
+		super(message,e);
+	}
 	}

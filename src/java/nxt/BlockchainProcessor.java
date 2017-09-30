@@ -41,6 +41,9 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
 
     public static class BlockNotAcceptedException extends NxtException {
 
+        BlockNotAcceptedException(String message, Exception e) {
+            super(message,e);
+        }
         BlockNotAcceptedException(String message) {
             super(message);
         }

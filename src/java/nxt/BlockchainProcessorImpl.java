@@ -1076,7 +1076,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 //should never reach that point
                 throw new BlockNotAcceptedException("md5 does not exist");
             } catch (AT_Exception e) {
-                throw new BlockNotAcceptedException("ats are not matching at block height " + Nxt.getBlockchain().getHeight());
+                throw new BlockNotAcceptedException("ats are not matching at block height " + Nxt.getBlockchain().getHeight(),e);
             }
             calculatedRemainingAmount += atBlock.getTotalAmount();
             calculatedRemainingFee += atBlock.getTotalFees();
@@ -1455,11 +1455,22 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                                     }
                                 }
                             }
+//							Nxt.getDbs().getTransactionDb().saveTransactions(currentBlock.getTransactions());
+
                             blockListeners.notify(currentBlock, BlockchainProcessor.Event.BEFORE_BLOCK_ACCEPT);
                             blockchain.setLastBlock(currentBlock);
+
                             accept(currentBlock, null, null);
+
+							for (DerivedTable table : derivedTables) {
+								table.finish();
+							}
                             currentBlockId = currentBlock.getNextBlockId();
                             Nxt.getStores().commitTransaction();
+
+							logger.info("scanned block " + currentBlock.getHeight());
+
+
                         } catch (NxtException | RuntimeException e) {
 							Nxt.getStores().rollbackTransaction();
                             logger.debug(e.toString(), e);

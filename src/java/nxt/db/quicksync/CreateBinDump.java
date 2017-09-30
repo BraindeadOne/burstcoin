@@ -61,6 +61,7 @@ public class CreateBinDump {
                         " Consider switching to mariadb for much better performance");
                 Thread.sleep(20000);
             }
+            Db.init();
             switch (Db.getDatabaseType()) {
                 case MARIADB:
                     logger.info("Using mariadb Backend");
@@ -77,7 +78,7 @@ public class CreateBinDump {
                 default:
                     throw new RuntimeException("Error initializing wallet: Unknown database type");
             }
-            Db.init();
+
             dump(args[0]);
         } catch (Exception e) {
             logger.error("Error", e);
