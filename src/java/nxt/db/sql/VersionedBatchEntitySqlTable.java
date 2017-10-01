@@ -68,7 +68,7 @@ public abstract class VersionedBatchEntitySqlTable<T> extends VersionedEntitySql
             while(it.hasNext()) {
                 DbKey key = it.next();
                 key.setPK(pstmt);
-                DbUtils.setLimits(2, pstmt, 1);
+                DbUtils.setLimits(dbKeyFactory.getPkVariables()+1, pstmt, 1000);
                 pstmt.addBatch();
             }
             pstmt.executeBatch();
