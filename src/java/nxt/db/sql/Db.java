@@ -5,6 +5,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import nxt.Constants;
 import nxt.Nxt;
+import nxt.db.firebird.hacks.PreparedStatementWrapper;
 import org.firebirdsql.gds.impl.GDSType;
 import org.firebirdsql.management.FBManager;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.EnumMap;
@@ -21,19 +23,17 @@ import java.util.Map;
 public final class Db {
 
     private static final Logger logger = LoggerFactory.getLogger(Db.class);
-
-    private static HikariDataSource cp;
     private static final ThreadLocal<DbConnection> localConnection = new ThreadLocal<>();
     private static final ThreadLocal<Map<String, Map<DbKey, Object>>> transactionCaches = new ThreadLocal<>();
     private static final ThreadLocal<Map<String, Map<DbKey, Object>>> transactionBatches = new ThreadLocal<>();
+    private static final boolean enableSqlMetrics = Nxt.getBooleanProperty("burst.enableSqlMetrics", false);
+    private static HikariDataSource cp;
     private static TYPE DATABASE_TYPE;
     private static Map<TYPE, Map<String, String>> additionalDatabaseOptions = new EnumMap<>(TYPE.class);
-    private static final boolean enableSqlMetrics = Nxt.getBooleanProperty("burst.enableSqlMetrics", false);
-
 
     static {
-      // Moved to init()
-        for (TYPE type: TYPE.values())
+        // Moved to init()
+        for (TYPE type : TYPE.values())
             additionalDatabaseOptions.put(type, new HashMap<>());
     }
 
@@ -41,14 +41,15 @@ public final class Db {
     private Db() {
     } // never
 
-    /** Adds a database-type specific config option. Used in alternate run modes to set
+    /**
+     * Adds a database-type specific config option. Used in alternate run modes to set
      * unconventional options.
+     *
      * @param databaseType The database type for which to set the option
-     * @param name name of the option
-     * @param value value of the option
+     * @param name         name of the option
+     * @param value        value of the option
      */
-    public static void addDatabaseOption (TYPE databaseType, String name, String value)
-    {
+    public static void addDatabaseOption(TYPE databaseType, String name, String value) {
         additionalDatabaseOptions.get(databaseType).put(name, value);
     }
 
@@ -118,8 +119,8 @@ public final class Db {
                     break;
             }
 
-            Map<String, String> additionalOptions =additionalDatabaseOptions.get(DATABASE_TYPE);
-            for (String k: additionalOptions.keySet())
+            Map<String, String> additionalOptions = additionalDatabaseOptions.get(DATABASE_TYPE);
+            for (String k : additionalOptions.keySet())
                 config.addDataSourceProperty(k, additionalOptions.get(k));
 
             cp = new HikariDataSource(config);
@@ -320,6 +321,14 @@ public final class Db {
 
         private DbConnection(Connection con) {
             super(con);
+        }
+
+        @Override
+        public PreparedStatement prepareStatement(String sql) throws SQLException {
+            if (getDatabaseType() == TYPE.FIREBIRD)
+                return new PreparedStatementWrapper(super.prepareStatement(sql));
+            else
+                return super.prepareStatement(sql);
         }
 
         @Override
