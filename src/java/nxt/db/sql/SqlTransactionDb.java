@@ -13,7 +13,7 @@ public abstract class SqlTransactionDb implements TransactionDb {
 
     @Override public Transaction findTransaction(long transactionId) {
         try (Connection con = Db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM transaction WHERE id = ?")) {
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM txn WHERE id = ?")) {
             pstmt.setLong(1, transactionId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -30,7 +30,7 @@ public abstract class SqlTransactionDb implements TransactionDb {
 
     @Override public Transaction findTransactionByFullHash(String fullHash) {
         try (Connection con = Db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM transaction WHERE full_hash = ?")) {
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM txn WHERE full_hash = ?")) {
             pstmt.setBytes(1, Convert.parseHexString(fullHash));
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -47,7 +47,7 @@ public abstract class SqlTransactionDb implements TransactionDb {
 
     @Override public boolean hasTransaction(long transactionId) {
         try (Connection con = Db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT 1 FROM transaction WHERE id = ?")) {
+             PreparedStatement pstmt = con.prepareStatement("SELECT 1 FROM txn WHERE id = ?")) {
             pstmt.setLong(1, transactionId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 return rs.next();
@@ -59,7 +59,7 @@ public abstract class SqlTransactionDb implements TransactionDb {
 
     @Override public boolean hasTransactionByFullHash(String fullHash) {
         try (Connection con = Db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT 1 FROM transaction WHERE full_hash = ?")) {
+             PreparedStatement pstmt = con.prepareStatement("SELECT 1 FROM txn WHERE full_hash = ?")) {
             pstmt.setBytes(1, Convert.parseHexString(fullHash));
             try (ResultSet rs = pstmt.executeQuery()) {
                 return rs.next();
@@ -143,7 +143,7 @@ public abstract class SqlTransactionDb implements TransactionDb {
 
     @Override public List<TransactionImpl> findBlockTransactions(long blockId) {
         try (Connection con = Db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM transaction WHERE block_id = ? AND signature IS NOT NULL ORDER BY id")) {
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM txn WHERE block_id = ? AND signature IS NOT NULL ORDER BY id")) {
             pstmt.setLong(1, blockId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 List<TransactionImpl> list = new ArrayList<>();
@@ -172,7 +172,7 @@ public abstract class SqlTransactionDb implements TransactionDb {
 
 
     public void saveTransactions(Connection con, List<TransactionImpl> transactions) {
-        try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO transaction (id, deadline, sender_public_key, "
+        try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO txn (id, deadline, sender_public_key, "
                 + "recipient_id, amount, fee, referenced_transaction_full_hash, height, "
                 + "block_id, signature, timestamp, type, subtype, sender_id, attachment_bytes, "
                 + "block_timestamp, full_hash, version, has_message, has_encrypted_message, has_public_key_announcement, "
@@ -231,8 +231,8 @@ public abstract class SqlTransactionDb implements TransactionDb {
 
     /*public void saveTransactions(Connection con, AT at, Block block) {
         try {
-                        for ( AT_Transaction transaction : at.getTransactions() ) {
-                                try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO transaction (id, deadline, sender_public_key, "
+                        for ( AT_Transaction txn : at.getTransactions() ) {
+                                try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO txn (id, deadline, sender_public_key, "
                                                 + "recipient_id, amount, fee, referenced_transaction_full_hash, height, "
                                                 + "block_id, signature, \"timestamp\", type, subtype, sender_id, attachment_bytes, "
                                                 + "block_timestamp, full_hash, version, has_message, has_encrypted_message, has_public_key_announcement, "

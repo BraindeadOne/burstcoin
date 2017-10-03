@@ -2,6 +2,7 @@ package nxt.db.quicksync;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
+import nxt.db.derby.DerbyDbs;
 import nxt.db.firebird.FirebirdDbs;
 import nxt.db.h2.H2Dbs;
 import nxt.db.mariadb.MariadbDbs;
@@ -23,6 +24,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -130,6 +133,9 @@ public class LoadBinDump {
                     logger.info("Using firebird Backend");
                     dbs = new FirebirdDbs();
                     break;
+                case DERBY:
+                    dbs = new DerbyDbs();
+                    break;
                 default:
                     throw new RuntimeException("Error initializing wallet: Unknown database type");
             }
@@ -180,9 +186,9 @@ public class LoadBinDump {
 
                 while (!input.eof() && (clazz = kryo.readClass(input).getType()) != null) {
                     long rows = input.readLong();
-                    String sql = "truncate table " + BinDumps.getTableName(clazz) + ";";
+                    String sql = "truncate table " + BinDumps.getTableName(clazz) + "";
                     if (Db.getDatabaseType() == Db.TYPE.FIREBIRD)
-                        sql = "delete from " + BinDumps.getTableName(clazz) + ";";
+                        sql = "delete from " + BinDumps.getTableName(clazz) + "";
                     logger.debug(sql);
                     stmt.executeUpdate(sql);
 
@@ -197,6 +203,14 @@ public class LoadBinDump {
                         sb.append(BinDumps.getColumnName(field)).append(",");
 
                     }
+                    boolean hasDbId = false;
+                    for (Field field : fields) {
+                        String columnName = BinDumps.getColumnName(field);
+
+                        if ("db_Id".equals(columnName))
+                            hasDbId = true;
+                    }
+
                     // Remove last ,
                     sb.deleteCharAt(sb.lastIndexOf(","));
                     sb.append(") VALUES ( ");
@@ -205,7 +219,7 @@ public class LoadBinDump {
                     sql = sb.toString();
                     logger.debug(sql);
                     PreparedStatement ps = con.prepareStatement(sql);
-
+                    long maxId = 0;
                     for (long l = 0; l < rows; l++) {
                         o = kryo.readObject(input, clazz);
                         int i = 0;
@@ -250,6 +264,11 @@ public class LoadBinDump {
                     }
                     ps.executeBatch();
                     logger.info(clazz.getSimpleName() + ": " + rows + " / " + rows);
+                    if (hasDbId)
+                    {
+                        stmt.executeQuery("alter table "+BinDumps.getTableName(clazz)+" ALTER db_id  RESTART WITH ");
+                    }
+
                 }
 
                 dbs.enableForeignKeyChecks(con);

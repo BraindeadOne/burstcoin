@@ -60,6 +60,11 @@ public final class DbUtils {
 	 switch (Db.getDatabaseType()) {
             case FIREBIRD:
                 return table.equalsIgnoreCase("at") ? "\"" + table.toUpperCase() + "\"" : table;
+         case DERBY:
+             if ("transaction".equalsIgnoreCase(table))
+                 return "txn";
+             if ("at".equalsIgnoreCase(table))
+                 return "atxn";
             default:
                 return table;
         }
@@ -69,6 +74,8 @@ public final class DbUtils {
         switch (Db.getDatabaseType()) {
             case FIREBIRD:
                 return " ROWS ? ";
+            case DERBY:
+                return " FETCH FIRST ? ROWS ONLY";
             default:
                 return " LIMIT ?";
         }
@@ -88,6 +95,16 @@ public final class DbUtils {
                     return "";
                 }
             }
+            case DERBY:
+                if (limit > 0 && from > 0) {
+                    return " FETCH FIRST  ? ROWS ONLY OFFSET ? ROWS ";
+                } else if (limit > 0) {
+                    return " FETCH FIRST ? ROWS ONLY ";
+                } else if (from > 0) {
+                    return " OFFSET ? ROWS ";
+                } else {
+                    return "";
+                }
             default: {
                 if (limit > 0 && from > 0) {
                     return " LIMIT ? OFFSET ? ";

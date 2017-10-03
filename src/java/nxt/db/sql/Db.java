@@ -117,6 +117,9 @@ public final class Db {
                     config.addDataSourceProperty("prepStmtCacheSize", "250");
                     config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
                     break;
+                case DERBY:
+                    config.addDataSourceProperty("create", "true");
+                    break;
             }
 
             Map<String, String> additionalOptions = additionalDatabaseOptions.get(DATABASE_TYPE);
@@ -297,7 +300,8 @@ public final class Db {
     public enum TYPE {
         H2,
         MARIADB,
-        FIREBIRD;
+        FIREBIRD,
+        DERBY;
 
         public static TYPE getTypeFromJdbcUrl(String jdbcUrl) {
             if (jdbcUrl.contains("jdbc:mysql") || jdbcUrl.contains("jdbc:mariadb"))
@@ -306,6 +310,8 @@ public final class Db {
                 return FIREBIRD;
             if (jdbcUrl.contains("jdbc:h2"))
                 return H2;
+            if (jdbcUrl.contains("jdbc:derby"))
+                return DERBY;
             throw new IllegalArgumentException("Unable to determine database type from this: '" + jdbcUrl + "'");
         }
     }

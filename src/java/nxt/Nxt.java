@@ -3,6 +3,8 @@ package nxt;
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.github.gquintana.metrics.util.SqlObjectNameFactory;
+import nxt.db.derby.DerbyDbs;
+import nxt.db.derby.DerbyStores;
 import nxt.db.firebird.FirebirdDbs;
 import nxt.db.firebird.FirebirdStores;
 import nxt.db.h2.H2Dbs;
@@ -247,6 +249,11 @@ public final class Nxt {
                         logger.info("Using h2 Backend");
                         dbs = new H2Dbs();
                         stores = new H2Stores();
+                        break;
+                    case DERBY:
+                        logger.info("Using derby Backend");
+                        dbs = new DerbyDbs();
+                        stores = new DerbyStores();
                         break;
                     default:
                         throw new RuntimeException("Error initializing wallet: Unknown database type");
