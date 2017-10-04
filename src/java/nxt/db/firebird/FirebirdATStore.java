@@ -5,12 +5,16 @@ import nxt.Nxt;
 import nxt.at.AT_API_Helper;
 import nxt.db.sql.DbUtils;
 import nxt.db.sql.SqlATStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 class FirebirdATStore extends SqlATStore {
+    private static final Logger logger = LoggerFactory.getLogger(FirebirdATStore.class);
+
     @Override
     protected void saveATState(Connection con, AT.ATState atState) throws SQLException {
         try (PreparedStatement pstmt = con.prepareStatement("UPDATE OR INSERT INTO at_state (at_id, "
@@ -19,6 +23,7 @@ class FirebirdATStore extends SqlATStore {
             int i = 0;
             pstmt.setLong(++i, atState.getATId());
             //DbUtils.setBytes(pstmt, ++i, state);
+            logger.debug("ATState "+atState.getATId());
             DbUtils.setBytes(pstmt, ++i, AT.compressState(atState.getState()));
             pstmt.setInt(++i, atState.getPrevHeight());
             pstmt.setInt(++i, atState.getNextHeight());

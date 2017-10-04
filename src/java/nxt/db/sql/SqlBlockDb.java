@@ -217,19 +217,20 @@ public abstract class SqlBlockDb implements BlockDb {
             return;
         }
         try (Connection con = Db.getConnection();
-             PreparedStatement pstmtSelect = con.prepareStatement("SELECT db_id FROM block WHERE db_id >= "
-                     + "(SELECT db_id FROM block WHERE id = ?) ORDER BY db_id DESC");
+             PreparedStatement pstmtSelect = con.prepareStatement("SELECT db_id FROM block WHERE height >= "
+                     + "(SELECT height FROM block WHERE id = ?) ORDER BY db_id DESC");
              PreparedStatement pstmtDelete = con.prepareStatement("DELETE FROM block WHERE db_id = ?")) {
             try {
                 pstmtSelect.setLong(1, blockId);
                 try (ResultSet rs = pstmtSelect.executeQuery()) {
-                    Db.commitTransaction();
+//                    Db.commitTransaction();
                     while (rs.next()) {
                         pstmtDelete.setInt(1, rs.getInt("db_id"));
                         pstmtDelete.executeUpdate();
-                        Db.commitTransaction();
+//                        Db.commitTransaction();
                     }
                 }
+                Db.commitTransaction();
             } catch (SQLException e) {
                 Db.rollbackTransaction();
                 throw e;

@@ -16,6 +16,8 @@ import java.util.Map;
  * Wrapper to convert byte arrays to hex-encoded Strings to please firebird
  */
 public class ResultSetWrapper implements ResultSet, AutoCloseable {
+    private static final Logger logger = LoggerFactory.getLogger(ResultSetWrapper.class);
+
     private final ResultSet resultSet;
 
     public ResultSetWrapper(ResultSet resultSet) {
@@ -23,11 +25,15 @@ public class ResultSetWrapper implements ResultSet, AutoCloseable {
     }
 
     public byte[] getBytes(int columnIndex) throws SQLException {
-        return Convert.parseHexString(resultSet.getString(columnIndex));
+        String value = resultSet.getString(columnIndex);
+        logger.debug(columnIndex+" = "+value);
+        return Convert.parseHexString(value);
     }
 
     public byte[] getBytes(String columnLabel) throws SQLException {
-        return Convert.parseHexString(resultSet.getString(columnLabel));
+        String value = resultSet.getString(columnLabel);
+        logger.debug(columnLabel+" = "+value);
+        return Convert.parseHexString(value);
     }
 
     // All delegates from here on

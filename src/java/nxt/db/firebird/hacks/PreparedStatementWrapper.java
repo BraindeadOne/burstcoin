@@ -16,6 +16,7 @@ import java.util.Calendar;
  */
 
 public class PreparedStatementWrapper implements AutoCloseable, PreparedStatement {
+    private static final Logger logger = LoggerFactory.getLogger(PreparedStatementWrapper.class);
 
     private final PreparedStatement preparedStatement;
 
@@ -26,7 +27,9 @@ public class PreparedStatementWrapper implements AutoCloseable, PreparedStatemen
     // Since we got many problems with binary data we simply encode them as a hex string
     // Yes, we are both lazy and crazy like that
     public void setBytes(int parameterIndex, byte[] x) throws SQLException {
-        preparedStatement.setString(parameterIndex, Convert.toHexString(x));
+        String value = Convert.toHexString(x);
+        logger.debug(parameterIndex+" = "+value);
+        preparedStatement.setString(parameterIndex, value);
     }
 
     public ResultSet executeQuery() throws SQLException {

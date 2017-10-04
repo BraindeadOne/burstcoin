@@ -78,7 +78,10 @@ public abstract class VersionedEntitySqlTable<T> extends EntitySqlTable<T> imple
         switch (Db.getDatabaseType())
         {
             case FIREBIRD:
-                throw new IllegalArgumentException("FIX MEEEEE!!!");
+                setLatestSql = "UPDATE " + DbUtils.quoteTableName(table)
+                        + " SET latest = TRUE " + dbKeyFactory.getPKClause() + " AND height ="
+                        + " (SELECT MAX(height) FROM " + DbUtils.quoteTableName(table) + dbKeyFactory.getPKClause() + ")";
+                break;
             case H2:
                 setLatestSql = "UPDATE " + DbUtils.quoteTableName(table)
                         + " SET latest = TRUE " + dbKeyFactory.getPKClause() + " AND height ="
