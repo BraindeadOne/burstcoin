@@ -768,7 +768,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
 	@Override
 	public void registerDerivedTable(DerivedTable table) {
-		logger.info("Registering derived table "+table.getClass());
+		logger.trace("Registering derived table "+table.getClass());
 		derivedTables.add(table);
 	}
 

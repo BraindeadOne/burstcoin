@@ -50,7 +50,7 @@ public abstract class AT_Controller {
 
 			state.setG_balance( state.getG_balance() - (stepFee * numSteps) );
 			state.getMachineState().steps += numSteps;
-			int rc = processor.processOp( false , false );
+			int rc = processor.processOp( true , false );
 
 			if ( rc >= 0 )
 			{

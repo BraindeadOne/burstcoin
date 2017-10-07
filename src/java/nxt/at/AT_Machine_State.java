@@ -9,9 +9,13 @@
 package nxt.at;
 
 import nxt.Constants;
+import nxt.util.Convert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.TreeSet;
@@ -19,6 +23,8 @@ import java.util.TreeSet;
 
 public class AT_Machine_State
 {
+
+	private static final Logger logger = LoggerFactory.getLogger(AT_Machine_State.class);
 
 	public class Machine_State 
 	{
@@ -133,7 +139,10 @@ public class AT_Machine_State
 			bytes.put( B3 );
 			bytes.put( B4 );
 			
-			
+			if (logger.isTraceEnabled())
+			{
+				logger.trace("getMachineStateBytes: "+ Convert.toHexString(bytes.array()));
+			}
 			return bytes.array();
 		}
 		
@@ -163,7 +172,10 @@ public class AT_Machine_State
 			bf.get( B2 , 0 , 8 );
 			bf.get( B3 , 0 , 8 );
 			bf.get( B4 , 0 , 8 );
-			
+			if (logger.isTraceEnabled())
+			{
+				logger.trace("setMachineState: "+ Convert.toHexString(machineState));
+			}
 		}
 
 		public int getSize() {
@@ -172,6 +184,33 @@ public class AT_Machine_State
 
 		public long getSteps() {
 			return steps;
+		}
+
+		@Override
+		public String toString() {
+			return "Machine_State{" +
+					"running=" + running +
+					", stopped=" + stopped +
+					", finished=" + finished +
+					", dead=" + dead +
+					", pc=" + pc +
+					", pcs=" + pcs +
+					", opc=" + opc +
+					", cs=" + cs +
+					", us=" + us +
+					", err=" + err +
+					", steps=" + steps +
+					", A1=" + Convert.toHexString(A1) +
+					", A2=" + Convert.toHexString(A2) +
+					", A3=" + Convert.toHexString(A3) +
+					", A4=" + Convert.toHexString(A4) +
+					", B1=" + Convert.toHexString(B1) +
+					", B2=" + Convert.toHexString(B2) +
+					", B3=" + Convert.toHexString(B3) +
+					", B4=" + Convert.toHexString(B4) +
+					", flags=" + Convert.toHexString(flags) +
+					", jumps=" + jumps +
+					'}';
 		}
 	}
 
@@ -234,9 +273,10 @@ public class AT_Machine_State
 		ap_code.clear();
 		
 		transactions = new LinkedHashMap< ByteBuffer, AT_Transaction >();
-		
-		
-		
+
+
+		if (logger.isTraceEnabled())
+			logger.trace("AT_Machine_State: "+this.toString());
 	}
 
 	public AT_Machine_State( byte[] atId , byte[] creator , byte[] creationBytes , int height ) 
@@ -327,6 +367,8 @@ public class AT_Machine_State
 		this.g_balance = 0;
 		this.p_balance = 0;
 		this.machineState = new Machine_State();
+		if (logger.isTraceEnabled())
+			logger.trace("AT_Machine_State: "+this.toString());
 	}
 
 	protected byte[] get_A1()
@@ -652,13 +694,38 @@ public class AT_Machine_State
 		b.put( dataBytes );
 		b.put( txBytes );
 
+		if (logger.isTraceEnabled())
+			logger.trace(String.format("getBytes: %s", this.toString()));
 		return b.array();
 
 	}
 
 	public void setFreeze(boolean freeze) {
 		this.freezeWhenSameBalance = freeze;
-		
 	}
 
+	@Override
+	public String toString() {
+		return "AT_Machine_State{" +
+				"version=" + version +
+				", g_balance=" + g_balance +
+				", p_balance=" + p_balance +
+				", machineState=" + machineState +
+				", csize=" + csize +
+				", dsize=" + dsize +
+				", c_user_stack_bytes=" + c_user_stack_bytes +
+				", c_call_stack_bytes=" + c_call_stack_bytes +
+				", atID=" + Convert.toHexString(atID) +
+				", creator=" + Convert.toHexString(creator) +
+				", creationBlockHeight=" + creationBlockHeight +
+				", waitForNumberOfBlocks=" + waitForNumberOfBlocks +
+				", sleepBetween=" + sleepBetween +
+				", freezeWhenSameBalance=" + freezeWhenSameBalance +
+				", minActivationAmount=" + minActivationAmount +
+				", ap_data=" +  Convert.toHexString(ap_data.array()) +
+				", ap_code=" + Convert.toHexString(ap_code.array()) +
+				", height=" + height +
+				", transactions=" + transactions +
+				'}';
+	}
 }

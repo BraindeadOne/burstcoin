@@ -15,7 +15,11 @@ import nxt.at.AT_Machine_State;
 import nxt.at.AT_Transaction;
 import nxt.db.NxtKey;
 import nxt.db.VersionedEntityTable;
+import nxt.util.Convert;
 import nxt.util.Listener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.SubstituteLogger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,6 +31,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public final class AT extends AT_Machine_State {
+	private static final Logger logger = LoggerFactory.getLogger(AT_Machine_State.class);
 
 	static {
 		Nxt.getBlockchainProcessor().addListener(new Listener<Block>() {
@@ -114,6 +119,7 @@ public final class AT extends AT_Machine_State {
 
 		private final long atId;
 		public final NxtKey dbKey;
+
 		private byte[] state;
 		private int prevHeight;
 		private int nextHeight;
@@ -132,6 +138,8 @@ public final class AT extends AT_Machine_State {
 			this.prevBalance = prevBalance;
 			this.freezeWhenSameBalance = freezeWhenSameBalance;
 			this.minActivationAmount = minActivationAmount;
+			if (logger.isTraceEnabled())
+				logger.trace("AT_Machine_State: "+this.toString());
 		}
 
 
@@ -194,6 +202,21 @@ public final class AT extends AT_Machine_State {
 
 		public void setMinActivationAmount(long newMinActivationAmount) {
 			this.minActivationAmount = newMinActivationAmount;
+		}
+
+		@Override
+		public String toString() {
+			return "ATState{" +
+					"atId=" + atId +
+					", dbKey=" + dbKey +
+					", state=" + Convert.toHexString(state) +
+					", prevHeight=" + prevHeight +
+					", nextHeight=" + nextHeight +
+					", sleepBetween=" + sleepBetween +
+					", prevBalance=" + prevBalance +
+					", freezeWhenSameBalance=" + freezeWhenSameBalance +
+					", minActivationAmount=" + minActivationAmount +
+					'}';
 		}
 	}
 
@@ -269,6 +292,8 @@ public final class AT extends AT_Machine_State {
 			state = new ATState( AT_API_Helper.getLong( this.getId() ) , getState(), prevHeight, nextHeight, getSleepBetween(), getP_balance(), freezeOnSameBalance(), minActivationAmount());
 		}
 		atStateTable.insert(state);
+		if (logger.isTraceEnabled())
+			logger.trace("saveState:"+state.toString());
 	}
 
 

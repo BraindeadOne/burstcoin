@@ -133,6 +133,12 @@ public interface DbKey extends NxtKey {
             return (int) (id ^ (id >>> 32));
         }
 
+        @Override
+        public String toString() {
+            return "LongKey{" +
+                    "id=" + id +
+                    '}';
+        }
     }
 
     static final class LinkKey implements DbKey {
@@ -167,6 +173,13 @@ public interface DbKey extends NxtKey {
             return (int) (idA ^ (idA >>> 32)) ^ (int) (idB ^ (idB >>> 32));
         }
 
+        @Override
+        public String toString() {
+            return "LinkKey{" +
+                    "idA=" + idA +
+                    ", idB=" + idB +
+                    '}';
+        }
     }
 
 }
