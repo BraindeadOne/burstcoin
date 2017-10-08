@@ -217,20 +217,19 @@ public abstract class SqlBlockDb implements BlockDb {
             return;
         }
         try (Connection con = Db.getConnection();
-             PreparedStatement pstmtSelect = con.prepareStatement("SELECT db_id FROM block WHERE height >= "
-                     + "(SELECT height FROM block WHERE id = ?) ORDER BY db_id DESC");
+             PreparedStatement pstmtSelect = con.prepareStatement("SELECT db_id FROM block WHERE db_id >= "
+                     + "(SELECT db_id FROM block WHERE id = ?) ORDER BY db_id DESC");
              PreparedStatement pstmtDelete = con.prepareStatement("DELETE FROM block WHERE db_id = ?")) {
             try {
                 pstmtSelect.setLong(1, blockId);
                 try (ResultSet rs = pstmtSelect.executeQuery()) {
-//                    Db.commitTransaction();
+                    Db.commitTransaction();
                     while (rs.next()) {
                         pstmtDelete.setInt(1, rs.getInt("db_id"));
                         pstmtDelete.executeUpdate();
-//                        Db.commitTransaction();
+                        Db.commitTransaction();
                     }
                 }
-                Db.commitTransaction();
             } catch (SQLException e) {
                 Db.rollbackTransaction();
                 throw e;
@@ -242,37 +241,5 @@ public abstract class SqlBlockDb implements BlockDb {
 
     @Override
     public abstract void deleteAll();
-
-    @Override
-    public List<Long> getBlockIdsFromHeight(int height) {
-        List<Long> res = new ArrayList<>();
-        try (Connection con = Db.getConnection(); PreparedStatement ps =
-                con.prepareStatement("SELECT id FROM block WHERE height >= ? ORDER BY db_id ASC"))
-        {
-            ps.setLong(1, height);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next())
-                res.add(rs.getLong("id"));
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return res;
-    }
-
-    @Override
-    public BlockImpl loadBlock(Long id) throws NxtException.ValidationException {
-        try (Connection con = Db.getConnection(); PreparedStatement ps =
-                con.prepareStatement("SELECT * FROM block WHERE id=?");)
-        {
-            ps.setLong(1,id);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next())
-              return loadBlock(con, rs);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        throw new RuntimeException("Unable to load Block with id "+id);
-    }
 
 }

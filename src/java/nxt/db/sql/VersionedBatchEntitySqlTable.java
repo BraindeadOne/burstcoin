@@ -62,12 +62,13 @@ public abstract class VersionedBatchEntitySqlTable<T> extends VersionedEntitySql
 
         try(Connection con = Db.getConnection();
             PreparedStatement pstmt = con.prepareStatement("UPDATE " + table
-                + " SET latest = FALSE " + dbKeyFactory.getPKClause() + " AND latest = TRUE")) {
+                + " SET latest = FALSE " + dbKeyFactory.getPKClause() + " AND latest = TRUE" + DbUtils.limitsClause(1))) {
             Set keySet = Db.getBatch(table).keySet();
             Iterator<DbKey> it = keySet.iterator();
             while(it.hasNext()) {
                 DbKey key = it.next();
                 key.setPK(pstmt);
+                DbUtils.setLimits(2, pstmt, 1);
                 pstmt.addBatch();
             }
             pstmt.executeBatch();
@@ -78,7 +79,7 @@ public abstract class VersionedBatchEntitySqlTable<T> extends VersionedEntitySql
 
         try(Connection con =Db.getConnection();
             PreparedStatement pstmt = con.prepareStatement(updateQuery())) {
-            System.err.println(pstmt);
+
             List<Map.Entry<DbKey,Object>> entries = new ArrayList<>(Db.getBatch(table).entrySet());
             for ( Map.Entry<DbKey,Object> entry: entries)
             {

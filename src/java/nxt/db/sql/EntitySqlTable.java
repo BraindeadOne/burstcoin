@@ -94,7 +94,7 @@ public abstract class EntitySqlTable<T> extends DerivedSqlTable implements Entit
     public T getBy(DbClause dbClause) {
         try (Connection con = Db.getConnection();
              PreparedStatement pstmt = con.prepareStatement("SELECT * FROM " + table
-                     + " WHERE " + dbClause.getClause() + (multiversion ? " AND latest = TRUE ORDER BY height DESC " + DbUtils.limitsClause(1) : ""))) {
+                     + " WHERE " + dbClause.getClause() + (multiversion ? " AND latest = TRUE" + DbUtils.limitsClause(1) : ""))) {
             int i = dbClause.set(pstmt, 1);
             DbUtils.setLimits(i, pstmt, 1);
             return get(con, pstmt, true);
@@ -320,11 +320,10 @@ public abstract class EntitySqlTable<T> extends DerivedSqlTable implements Entit
         }
         try (Connection con = Db.getConnection()) {
             if (multiversion) {
-
                 try (PreparedStatement pstmt = con.prepareStatement("UPDATE " + DbUtils.quoteTableName(table)
                         + " SET latest = FALSE " + dbKeyFactory.getPKClause() + " AND latest = TRUE" + DbUtils.limitsClause(1))) {
                     int i = dbKey.setPK(pstmt);
-                    DbUtils.setLimits(i++, pstmt, 100);
+                    DbUtils.setLimits(i++, pstmt, 1);
                     pstmt.executeUpdate();
                 }
             }

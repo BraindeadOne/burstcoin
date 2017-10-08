@@ -556,6 +556,8 @@ public class AT_API_Platform_Impl extends AT_API_Impl {
 	}
 
 	protected static Long findTransaction(int startHeight , int endHeight , Long atID, int numOfTx, long minAmount){
+		if (logger.isTraceEnabled())
+			logger.trace(String.format("findTransaction: startHeight: %d endHeight: %d atId: %d numOfTx: %d minAmount: %d", startHeight, endHeight, atID, numOfTx, minAmount));
 		return Nxt.getStores().getAtStore().findTransaction(startHeight, endHeight, atID, numOfTx, minAmount);
 	}
 
