@@ -117,7 +117,18 @@ public class CreateBinDump {
                 output.write(height);
                 rs.close();
                 List<String> classes = getClassNamesFromPackage("nxt.db.quicksync.pojo");
-
+                String sql;
+                // Lock tables for Mariadb - not needed for embedded databases
+                if (Db.getDatabaseType() == Db.TYPE.MARIADB) {
+                    List<String> tableLocks = new ArrayList<>();
+                    for (String classname : classes) {
+                        Class clazz = Class.forName("nxt.db.quicksync.pojo." + classname);
+                        tableLocks.add(BinDumps.getTableName(clazz) + " READ");
+                    }
+                    sql = "LOCK TABLES " + StringUtils.join(tableLocks, ", ");
+                    if (!con.createStatement().execute(sql))
+                        logger.warn("Unable to lock tables!");
+                }
                 for (String classname : classes) {
                     Class clazz = Class.forName("nxt.db.quicksync.pojo." + classname);
 //                    if (clazz.equals(At.class))
@@ -129,6 +140,7 @@ public class CreateBinDump {
 
                     for (Field field : ReflectionUtils.getAllFields(clazz)) {
                         fields.add(field);
+
                     }
                     Collections.sort(fields, Comparator.comparing(Field::getName));
                     for (Field field : fields) {
@@ -146,7 +158,7 @@ public class CreateBinDump {
                             .append(";");
 
 
-                    String sql = sb.toString();
+                      sql = sb.toString();
                     logger.debug(sql);
                     kryo.writeClass(output, clazz);
                     rs = con.createStatement().executeQuery("select count(1) from " + BinDumps.getTableName(clazz));
@@ -222,11 +234,16 @@ public class CreateBinDump {
                     logger.info(classname + ": " + records + " / " + rows);
 
                 }
+                if (Db.getDatabaseType() == Db.TYPE.MARIADB)
+                {
+                    con.createStatement().execute("UNLOCK TABLES");
+                }
                 Db.endTransaction();
             }
 
         }
-        logger.info("Dump created in " + ((System.currentTimeMillis() - start) / 1000) + "seconds");
+        logger.info(String.format("Dump created in %d seconds", (System.currentTimeMillis() - start) / 1000));
+
     }
 
 

@@ -11,6 +11,7 @@ import nxt.db.h2.H2Dbs;
 import nxt.db.h2.H2Stores;
 import nxt.db.mariadb.MariadbDbs;
 import nxt.db.mariadb.MariadbStores;
+import nxt.db.quicksync.Checkpoints;
 import nxt.db.sql.Db;
 import nxt.db.store.Dbs;
 import nxt.db.store.Stores;
@@ -261,6 +262,7 @@ public final class Nxt {
                 TransactionProcessorImpl.getInstance();
                 BlockchainProcessorImpl.getInstance();
 
+                Checkpoints.init();
 
                 Account.init();
                 Alias.init();
