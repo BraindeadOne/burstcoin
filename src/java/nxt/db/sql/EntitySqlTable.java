@@ -319,15 +319,43 @@ public abstract class EntitySqlTable<T> extends DerivedSqlTable implements Entit
                     + "that was read outside the current transaction");
         }
         try (Connection con = Db.getConnection()) {
+            save(con, t);
             if (multiversion) {
-                try (PreparedStatement pstmt = con.prepareStatement("UPDATE " + DbUtils.quoteTableName(table)
-                        + " SET latest = FALSE " + dbKeyFactory.getPKClause() + " AND latest = TRUE" + DbUtils.limitsClause(1))) {
+                String setLatestSql;
+                switch (Db.getDatabaseType())
+                {
+                    case FIREBIRD:
+                    case H2:
+                        setLatestSql="UPDATE " + DbUtils.quoteTableName(table)
+                                + " SET latest = (( select max(height) from " + DbUtils.quoteTableName(table) +" "+ dbKeyFactory.getPKClause() + ") = height)"
+                                +  dbKeyFactory.getPKClause();
+                        break;
+                    case MARIADB:
+                        setLatestSql="UPDATE " + DbUtils.quoteTableName(table)
+                                + " SET latest = ((select * from ( select max(height) from " + DbUtils.quoteTableName(table) +" "+ dbKeyFactory.getPKClause() + ") latest) = height)"
+                                +  dbKeyFactory.getPKClause();
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown database type");
+                }
+
+
+//                try (PreparedStatement pstmt = con.prepareStatement("UPDATE " + DbUtils.quoteTableName(table)
+//                        + " SET latest = FALSE " + dbKeyFactory.getPKClause() + " AND latest = TRUE" + DbUtils.limitsClause(1))) {
+//
+//
+//                    int i = dbKey.setPK(pstmt);
+//                    DbUtils.setLimits(i++, pstmt, 1);
+//                    pstmt.executeUpdate();
+//                }
+                try (PreparedStatement pstmt = con.prepareStatement(setLatestSql)) {
                     int i = dbKey.setPK(pstmt);
-                    DbUtils.setLimits(i++, pstmt, 1);
+                    i = dbKey.setPK(pstmt, i);
+//                    DbUtils.setLimits(i++, pstmt, 1);
                     pstmt.executeUpdate();
                 }
             }
-            save(con, t);
+
         } catch (SQLException e) {
             throw new RuntimeException(e.toString(), e);
         }
